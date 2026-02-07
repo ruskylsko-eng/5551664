@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ru" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bilimclass - Журнал оценок</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { box-sizing: border-box; font-family: 'Fredoka', sans-serif; }
+    .gradient-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .gradient-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .card-shadow { box-shadow: 0 10px 40px rgba(102, 126, 234, 0.15); }
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .pulse-dot { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.5;} }
+    .grade-badge { width:60px;height:60px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:white;cursor:pointer;transition:all 0.2s;}
+    .grade-badge:hover { transform: scale(1.05); }
+    .grade-badge.selected { transform: scale(1.15); box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+    .grade-1-2 { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    .grade-3-4 { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+    .grade-5-6 { background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%); }
+    .grade-7-8 { background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%); }
+    .grade-9-10 { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+    .stat-box { background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 10px 40px rgba(102,126,234,0.15);}
+    .stat-number { font-size:36px;font-weight:bold;color:#667eea; }
+    .stat-label { font-size:14px;color:#666;margin-top:8px; }
+    .journal-table { width:100%;border-collapse:collapse; }
+    .journal-table th { background:#667eea;color:white;padding:12px;text-align:left;font-weight:bold; }
+    .journal-table td { padding:12px;border-bottom:1px solid #e5e7eb; }
+    .journal-table tr:hover { background:#f9f9f9; }
+    .grade-cell { font-size:24px;font-weight:bold;text-align:center;cursor:pointer;padding:8px;border-radius:8px;transition: all 0.2s; }
+    .grade-cell:hover { background:#f0f0f0;transform: scale(1.05); }
+    .empty-grade { color:#999;font-size:20px; }
+    input[type="text"], textarea, select { font-family: 'Fredoka', sans-serif; }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:50; align-items:center; justify-content:center; }
+    .modal-overlay.active { display:flex; }
+    .modal-box { background:white;border-radius:24px;padding:32px;max-width:500px;width:90%; box-shadow:0 10px 40px rgba(102,126,234,0.15);}
+    .grade-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+    .input-field { transition: all 0.3s ease; }
+    .input-field:focus { transform: translateY(-2px); }
+    .delete-btn { background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px; transition:all 0.2s;}
+    .delete-btn:hover { background:#dc2626; transform:scale(1.05);}
+  </style>
+</head>
+<body class="h-full bg-gradient-to-b from-blue-50 to-purple-50">
+<div id="app" class="h-full overflow-auto">
+
+  <!-- Журнал -->
+  <div id="journal-screen" class="min-h-full p-4 py-6">
+    <div class="max-w-7xl mx-auto">
+      <!-- Заголовок -->
+      <div class="mb-6 fade-in">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+          <div>
+            <h1 class="text-4xl font-bold text-gray-800 flex items-center gap-3">
+              📚 <span id="journal-title">Bilimclass</span>
+              <span class="pulse-dot w-3 h-3 bg-green-500 rounded-full"></span>
+            </h1>
+            <p class="text-gray-600 text-lg">Журнал оценок в реальном времени</p>
+          </div>
+        </div>
+
+        <!-- Добавление ученика -->
+        <div class="bg-white rounded-2xl p-4 card-shadow flex gap-3 flex-wrap items-center">
+          <input type="text" id="new-student-input" placeholder="Введите имя ученика..." class="flex-1 min-w-[200px] px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100">
+          <button id="add-student-btn" class="px-6 py-3 gradient-green text-white rounded-xl font-bold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95">➕ Добавить</button>
+        </div>
+      </div>
+
+      <!-- Статистика -->
+      <div class="grid md:grid-cols-4 gap-4 mb-8">
+        <div class="stat-box">
+          <p class="stat-label">👥 Всего учеников</p>
+          <div class="stat-number" id="total-students">0</div>
+        </div>
+        <div class="stat-box">
+          <p class="stat-label">⭐ Средний балл</p>
+          <div class="stat-number" id="avg-grade">0</div>
+          <p class="text-sm text-gray-500">из 10</p>
+        </div>
+        <div class="stat-box">
+          <p class="stat-label">📝 Выставлено оценок</p>
+          <div class="stat-number" id="total-grades">0</div>
+        </div>
+        <div class="stat-box">
+          <p class="stat-label">📊 Процент оценённых</p>
+          <div class="stat-number" id="percentage-graded">0%</div>
+        </div>
+      </div>
+
+      <!-- Таблица -->
+      <div class="bg-white rounded-2xl overflow-hidden card-shadow">
+        <div class="overflow-x-auto">
+          <table class="journal-table">
+            <thead>
+              <tr>
+                <th style="width: 150px;">👤 Ученик</th>
+                <th>📅 Дата</th>
+                <th style="width: 70px;">⭐ Оценка</th>
+                <th>💬 Комментарий</th>
+                <th style="width: 120px;">🎯 Действие</th>
+              </tr>
+            </thead>
+            <tbody id="journal-tbody">
+              <tr><td colspan="5" class="text-center py-8 text-gray-500">📭 Журнал пуст. Добавьте ученика и выставьте оценку.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модал -->
+  <div id="grade-modal" class="modal-overlay">
+    <div class="modal-box fade-in">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">⭐ Выставить оценку</h2>
+        <button id="close-modal-btn" class="text-2xl text-gray-600 hover:text-gray-800 transition-all">✕</button>
+      </div>
+      <div class="gradient-blue text-white rounded-2xl p-4 mb-6">
+        <p class="text-sm opacity-90">Ученик:</p>
+        <p id="modal-student-name" class="text-2xl font-bold">—</p>
+      </div>
+      <div class="mb-6">
+        <label class="block text-lg font-bold text-gray-800 mb-4">Выберите оценку (1-10):</label>
+        <div class="grade-grid" id="grade-buttons">
+          <!-- Кнопки будут динамически -->
+        </div>
+        <p class="text-sm text-gray-500 mt-4">Выбрано: <span id="selected-grade" class="font-bold text-purple-600">—</span></p>
+      </div>
+      <div class="mb-6">
+        <label class="block text-lg font-bold text-gray-800 mb-2">💬 Комментарий (необязательно):</label>
+        <textarea id="comment-input" placeholder="Напишите комментарий к оценке..." rows="3" class="input-field w-full px-4 py-3 text-base border-2 border-gray-300 rounded-2xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 resize-none"></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button id="cancel-grade-btn" class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all">Отмена</button>
+        <button id="save-grade-btn" class="flex-1 py-4 gradient-green text-white rounded-2xl font-bold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95">✅ Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allStudents = [];
+let allGrades = [];
+let currentStudent = null;
+let currentGrade = null;
+
+// Инициализация кнопок оценок
+function initGradeButtons() {
+  const container = document.getElementById('grade-buttons');
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement('button');
+    btn.className = `grade-badge ${getGradeColor(i)}`;
+    btn.textContent = i;
+    btn.dataset.grade = i;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.grade-badge').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      currentGrade = i;
+      document.getElementById('selected-grade').textContent = i;
+    });
+    container.appendChild(btn);
+  }
+}
+
+// Добавление ученика
+function addStudent() {
+  const input = document.getElementById('new-student-input');
+  const name = input.value.trim();
+  if (!name) { alert('Введите имя ученика!'); return; }
+  if (allStudents.includes(name)) { alert('Этот ученик уже добавлен!'); return; }
+  allStudents.push(name);
+  input.value = '';
+  updateJournal();
+}
+
+// Удаление ученика
+function deleteStudent(name) {
+  if (!confirm(`Удалить ${name}?`)) return;
+  allStudents = allStudents.filter(s => s !== name);
+  allGrades = allGrades.filter(g => g.student !== name);
+  updateJournal();
+}
+
+// Открытие модального окна
+function openGradeModal(name) {
+  currentStudent = name;
+  document.getElementById('modal-student-name').textContent = name;
+  const gradeObj = allGrades.find(g => g.student === name);
+  currentGrade = gradeObj ? gradeObj.grade : null;
+  document.getElementById('comment-input').value = gradeObj ? gradeObj.comment : '';
+  document.querySelectorAll('.grade-badge').forEach(b => {
+    b.classList.remove('selected');
+    if (currentGrade && parseInt(b.dataset.grade) === currentGrade) b.classList.add('selected');
+  });
+  document.getElementById('selected-grade').textContent = currentGrade || '—';
+  document.getElementById('grade-modal').classList.add('active');
+}
+
+// Закрытие модального окна
+function closeModal() {
+  document.getElementById('grade-modal').classList.remove('active');
+  currentStudent = null;
+  currentGrade = null;
+  document.getElementById('comment-input').value = '';
+  document.getElementById('selected-grade').textContent = '—';
+  document.querySelectorAll('.grade-badge').forEach(b => b.classList.remove('selected'));
+}
+
+// Сохранение оценки
+function saveGrade() {
+  if (!currentStudent || currentGrade === null) { alert('Выберите оценку!'); return; }
+  const comment = document.getElementById('comment-input').value.trim();
+  const date = new Date().toLocaleDateString('ru-RU');
+  const existing = allGrades.find(g => g.student === currentStudent);
+  if (existing) {
+    existing.grade = currentGrade;
+    existing.comment = comment;
+    existing.date = date;
+  } else {
+    allGrades.push({ student: currentStudent, grade: currentGrade, comment, date });
+  }
+  closeModal();
+  updateJournal();
+}
+
+// Обновление таблицы и статистики
+function updateJournal() {
+  const tbody = document.getElementById('journal-tbody');
+  tbody.innerHTML = '';
+  if (allStudents.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">📭 Журнал пуст. Добавьте ученика и выставьте оценку.</td></tr>';
+    document.getElementById('total-students').textContent = '0';
+    document.getElementById('total-grades').textContent = '0';
+    document.getElementById('avg-grade').textContent = '0';
+    document.getElementById('percentage-graded').textContent = '0%';
+    return;
+  }
+  let totalGrades = 0, sumGrades = 0;
+  allStudents.forEach(name => {
+    const gradeObj = allGrades.find(g => g.student === name);
+    if (gradeObj) { totalGrades++; sumGrades += gradeObj.grade; }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="font-semibold text-gray-800">${name}</td>
+      <td class="text-gray-600">${gradeObj ? gradeObj.date : '—'}</td>
+      <td class="text-center">
+        <div class="grade-cell ${gradeObj ? getGradeColor(gradeObj.grade) : 'empty-grade'}">${gradeObj ? gradeObj.grade : '○'}</div>
+      </td>
+      <td class="text-gray-600 text-sm">${gradeObj && gradeObj.comment ? gradeObj.comment : '—'}</td>
+      <td class="text-center flex gap-2 justify-center">
+        <button onclick="openGradeModal('${name.replace("'", "\\'")}')" class="${gradeObj ? 'text-purple-600' : 'text-green-600'} font-bold hover:underline">${gradeObj ? '✏️' : '➕'}</button>
+        <button class="delete-btn" onclick="deleteStudent('${name.replace("'", "\\'")}')">🗑️</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('total-students').textContent = allStudents.length;
+  document.getElementById('total-grades').textContent = totalGrades;
+  document.getElementById('avg-grade').textContent = totalGrades ? (sumGrades / totalGrades).toFixed(1) : '0';
+  document.getElementById('percentage-graded').textContent = Math.round(totalGrades / allStudents.length * 100) + '%';
+}
+
+function getGradeColor(score) {
+  if (score <= 2) return 'grade-1-2';
+  if (score <= 4) return 'grade-3-4';
+  if (score <= 6) return 'grade-5-6';
+  if (score <= 8) return 'grade-7-8';
+  return 'grade-9-10';
+}
+
+// Ивенты
+document.getElementById('add-student-btn').addEventListener('click', addStudent);
+document.getElementById('new-student-input').addEventListener('keypress', e => { if(e.key==='Enter') addStudent(); });
+document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+document.getElementById('cancel-grade-btn').addEventListener('click', closeModal);
+document.getElementById('save-grade-btn').addEventListener('click', saveGrade);
+
+// Инициализация
+initGradeButtons();
+</script>
+</body>
+</html>
